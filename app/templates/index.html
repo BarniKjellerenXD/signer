@@ -1,76 +1,71 @@
 {% extends "base.html" %}
+{% block mainclass %}roomy{% endblock %}
 {% block content %}
-<section class="card">
-  <h2>Add an app</h2>
-  <form method="post" action="/upload" enctype="multipart/form-data" id="up">
-    <label class="drop">
-      <input type="file" name="ipa" id="ipa">
-      <span id="ipa-label">Choose an .ipa file</span>
-    </label>
-    <div class="or">or paste a direct link</div>
-    <input type="url" name="url" placeholder="https://example.com/app.ipa" inputmode="url" autocapitalize="off" autocorrect="off">
-    {% include "_options.html" %}
-    <button type="submit" class="primary wide">Upload &amp; sign</button>
-    <div id="prog" class="prog" hidden><div></div><span></span></div>
-  </form>
-</section>
-
-<section>
-  <div class="row-between">
-    <h2>Apps</h2>
-    {% if apps %}<form method="post" action="/resign-all"><button class="ghost small">Re-sign all</button></form>{% endif %}
+{% set busy_states = ('queued','signing','downloading','uploading') %}
+<div class="cols">
+<div>
+  <div class="title-row">
+    <h1>Apps</h1>
+    <div class="title-actions">
+      {% if apps %}<form method="post" action="/resign-all"><button class="plain small">{{ icon('resign', 16) }}Re-sign all</button></form>{% endif %}
+      <a class="btn primary round only-narrow" href="#add" aria-label="Add an app">{{ icon('plus') }}</a>
+    </div>
   </div>
-  {% if not apps %}<p class="muted">Nothing here yet. Upload an .ipa above.</p>{% endif %}
-  <ul class="apps">
+  <div id="live-apps" data-live>
+  {% if apps %}
+  <ul class="rows apps">
   {% for a in apps %}
+    {% set i = a.final or a.orig or {} %}
     <li>
       <a class="app" href="/app/{{ a.id }}">
-        <img src="/i/{{ a.id }}.png?r={{ a.rev or 0 }}" alt="" width="52" height="52">
-        <div class="meta">
+        <img class="app-icon" src="/i/{{ a.id }}.png?r={{ a.rev or 0 }}" alt="" width="60" height="60">
+        <span class="meta">
           <b>{{ (a.final or {}).name or a.name or 'App' }}</b>
-          <small>{{ (a.final or a.orig or {}).bundle_id or a.source }}{% if (a.final or a.orig or {}).version %} · v{{ (a.final or a.orig).version }}{% endif %}</small>
-          {% if a.status == 'signed' and a.profile_uuid and ident.profile and a.profile_uuid != ident.profile.uuid %}<small class="warn-t">signed with an older profile</small>{% endif %}
-        </div>
+          <small>{% if i.version %}v{{ i.version }} · {% endif %}{{ i.bundle_id or a.source }}</small>
+          {% if a.status == 'signed' and a.profile_uuid and ident.profile and a.profile_uuid != ident.profile.uuid %}<small class="warn-t">Signed with an older profile</small>
+          {% elif a.error and a.status not in busy_states %}<small class="{{ 'warn-t' if a.status == 'waiting' else 'err-t' }}">{{ a.error }}</small>{% endif %}
+        </span>
       </a>
       {% if a.status == 'signed' %}
-        <a class="btn install" href="{{ a|itms }}">Install</a>
+        <a class="btn primary pill" href="{{ a|itms }}">Install</a>
       {% else %}
-        <span class="badge {{ a.status }}">{% if a.status in ('queued','signing','downloading','uploading') %}<span class="spin"></span>{% endif %}{{ a.status }}</span>
+        <span class="badge {{ a.status }}">{% if a.status in busy_states %}<span class="spin"></span>{% endif %}{{ a.status|capitalize }}</span>
       {% endif %}
     </li>
   {% endfor %}
   </ul>
-</section>
+  {% else %}
+  <div class="empty">{{ icon('apps', 36) }}<b>No apps yet</b>Add an .ipa and it shows up here, signed and ready to install.</div>
+  {% endif %}
+  </div>
+</div>
 
-<section class="card help">
-  <h3>How installing works</h3>
-  <ol>
-    <li>Keep <b>Tailscale on</b> and open this site in <b>Safari</b>.</li>
-    <li>Your iPhone must be registered once: <a href="/enroll">Devices → Register this iPhone</a>.</li>
-    <li>Tap <b>Install</b>, confirm, and the app appears on the home screen.</li>
-  </ol>
-</section>
+<div class="col-side">
+  <section class="group" id="add">
+    <h2>Add an app</h2>
+    <form method="post" action="/upload" enctype="multipart/form-data" id="up">
+      <label class="drop">
+        <input type="file" name="ipa" id="ipa" accept=".ipa,.zip,application/octet-stream">
+        {{ icon('upload', 28) }}
+        <b id="ipa-title">Choose an .ipa file</b>
+        <small id="ipa-hint">or drop it here</small>
+      </label>
+      <div class="or">or paste a direct link</div>
+      <input type="url" name="url" aria-label="Link to an .ipa" placeholder="https://example.com/app.ipa" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
+      {% include "_options.html" %}
+      <button type="submit" class="primary wide lg">Upload &amp; sign</button>
+      <div id="prog" class="prog" hidden><div></div><span></span></div>
+    </form>
+  </section>
 
-<script>
-(function () {
-  var f = document.getElementById('up'), inp = document.getElementById('ipa'), lab = document.getElementById('ipa-label');
-  inp.addEventListener('change', function () { lab.textContent = inp.files.length ? inp.files[0].name : 'Choose an .ipa file'; });
-  f.addEventListener('submit', function (e) {
-    if (!window.FormData || !inp.files.length) return;      // URL-only uploads: normal submit
-    e.preventDefault();
-    var p = document.getElementById('prog'), bar = p.querySelector('div'), txt = p.querySelector('span');
-    p.hidden = false; f.querySelector('button[type=submit]').disabled = true;
-    var x = new XMLHttpRequest();
-    x.open('POST', '/upload');
-    x.upload.onprogress = function (ev) {
-      if (!ev.lengthComputable) return;
-      var pc = Math.round(ev.loaded / ev.total * 100);
-      bar.style.width = pc + '%'; txt.textContent = pc < 100 ? 'Uploading ' + pc + '%' : 'Reading app…';
-    };
-    x.onload = function () { location.href = x.responseURL || '/'; };
-    x.onerror = function () { txt.textContent = 'Upload failed - check Tailscale and try again'; f.querySelector('button[type=submit]').disabled = false; };
-    x.send(new FormData(f));
-  });
-})();
-</script>
+  <section class="group">
+    <h2>How installing works</h2>
+    <ol class="steps">
+      <li>Keep <b>Tailscale on</b> and open this site in <b>Safari</b>.</li>
+      <li>Register your iPhone once under <a href="/enroll">Devices</a>.</li>
+      <li>Tap <b>Install</b>, confirm, and the app appears on the home screen.</li>
+    </ol>
+  </section>
+</div>
+</div>
 {% endblock %}

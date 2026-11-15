@@ -1,0 +1,27 @@
+{#- Inline SVG icons. main.py exposes icon() and logo() as template globals. -#}
+{%- set PATHS = {
+  'apps': '<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
+  'phone': '<rect x="6.5" y="2.5" width="11" height="19" rx="3"/><path d="M10.5 5.5h3"/>',
+  'sliders': '<path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.5"/><circle cx="9" cy="17" r="2.5"/>',
+  'plus': '<path d="M12 5v14M5 12h14"/>',
+  'chevron': '<path d="M9 5.5l6.5 6.5L9 18.5"/>',
+  'back': '<path d="M15 5.5L8.5 12l6.5 6.5"/>',
+  'check': '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  'ok': '<circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.8 2.8L16 9.6"/>',
+  'warn': '<path d="M12 4.5l8.5 14.5h-17z"/><path d="M12 10.5v3.5M12 16.6v.1"/>',
+  'err': '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
+  'info': '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/>',
+  'upload': '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M4.5 14.5V18A1.5 1.5 0 0 0 6 19.5h12a1.5 1.5 0 0 0 1.5-1.5v-3.5"/>',
+  'download': '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M4.5 14.5V18A1.5 1.5 0 0 0 6 19.5h12a1.5 1.5 0 0 0 1.5-1.5v-3.5"/>',
+  'trash': '<path d="M4.5 7h15M9.5 7V5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M6.5 7l.8 11.2a2 2 0 0 0 2 1.8h5.4a2 2 0 0 0 2-1.8L17.5 7"/>',
+  'resign': '<path d="M19.5 12a7.5 7.5 0 0 1-13.2 4.9M4.5 12a7.5 7.5 0 0 1 13.2-4.9"/><path d="M18 3.5v3.7h-3.7M6 20.5v-3.7h3.7"/>',
+} -%}
+
+{%- macro icon(name, size=20, cls='') -%}
+<svg class="ic{{ ' ' ~ cls if cls }}" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ PATHS[name]|safe }}</svg>
+{%- endmacro -%}
+
+{#- The mark: a scalloped seal (10 round bumps drawn as a dotted stroke) with a check. -#}
+{%- macro logo(size=26) -%}
+<svg class="logo" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="0 5.027"/><path d="M8 12.4l2.8 2.8L16.2 9.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{%- endmacro -%}

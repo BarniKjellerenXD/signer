@@ -1,22 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Registered · {{ site }}{% endblock %}
 {% block content %}
-<section class="card">
-  <h2>✓ Device received</h2>
-  <p><b>{{ tok.name }}</b> {% if tok.product %}({{ tok.product }}{% if tok.version %}, iOS {{ tok.version }}{% endif %}){% endif %}</p>
-  <p class="mono big">{{ tok.udid }}</p>
-  {% if ident.asc %}
-    {% if tok.udid|lower in (ident.profile.devices if ident.profile else []) %}
-      <div class="flash ok">This iPhone is in the signing profile. <a href="/">Go install apps →</a></div>
-    {% elif task and task.status in ('queued','running') %}
-      <p class="muted">Registering with Apple and rebuilding the profile. This page refreshes by itself.</p>
-    {% elif task and task.status == 'error' %}
-      <div class="flash err">Apple step failed: {{ task.msg }}</div>
-    {% else %}
-      <p class="muted">Waiting for the profile to include this device… <a href="">refresh</a></p>
-    {% endif %}
-  {% else %}
-    <div class="flash warn">No Apple API key is configured, so the owner has to add this UDID on developer.apple.com and upload a new profile.</div>
-  {% endif %}
+<a class="back" href="/devices">{{ icon('back') }}Devices</a>
+<section class="group">
+  <div class="state">
+    <span class="orb ok">{{ icon('check', 26) }}</span>
+    <div>
+      <h2>Device received</h2>
+      <p><b>{{ tok.name }}</b>{% if tok.product %} · {{ tok.product }}{% if tok.version %}, iOS {{ tok.version }}{% endif %}{% endif %}</p>
+    </div>
+  </div>
 </section>
+<ul class="rows kv"><li><span>UDID</span><span class="mono">{{ tok.udid }}</span></li></ul>
+
+<div id="live-enroll" data-live>
+{% if ident.asc %}
+  {% if tok.udid|lower in (ident.profile.devices if ident.profile else []) %}
+    <div class="flash ok">{{ icon('ok') }}<div>This iPhone is in the signing profile.</div></div>
+    <a class="btn primary wide lg" href="/">Go install apps</a>
+  {% elif task and task.status in ('queued','running') %}
+    <p class="note center">Registering with Apple and rebuilding the profile. This page updates by itself.</p>
+  {% elif task and task.status == 'error' %}
+    <div class="flash err">{{ icon('err') }}<div>Apple step failed: {{ task.msg }}</div></div>
+  {% else %}
+    <p class="note center">Waiting for the profile to include this device… <a href="">Refresh</a></p>
+  {% endif %}
+{% else %}
+  <div class="flash warn">{{ icon('warn') }}<div>No Apple API key is configured, so the owner has to add this UDID on developer.apple.com and upload a new profile.</div></div>
+{% endif %}
+</div>
 {% endblock %}

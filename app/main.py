@@ -72,8 +72,8 @@ def png(w: int, h: int, rgb=(40, 44, 58)) -> bytes:
             + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
-DEFAULT_ICON = png(120, 120)
-TOUCH_ICON = png(180, 180, (201, 162, 39))
+DEFAULT_ICON = png(120, 120, (142, 142, 147))
+TOUCH_ICON = (BASE / "static" / "touch-icon.png").read_bytes()
 
 
 def itms(m: dict) -> str:
@@ -106,6 +106,8 @@ def _size(n):
 tpl.env.filters.update(ago=_ago, days=_days, size=_size,
                        date=lambda ts: time.strftime("%Y-%m-%d", time.localtime(ts)) if ts else "",
                        itms=itms)
+_icons = tpl.env.get_template("_icons.html").module
+tpl.env.globals.update(icon=_icons.icon, logo=_icons.logo)
 
 
 def page(request: Request, name: str, status_code: int = 200, **kw):

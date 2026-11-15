@@ -1,19 +1,25 @@
 {% set o = (m.options if m is defined and m else {}) %}
 <details class="opts"{% if o %} open{% endif %}>
-  <summary>Options</summary>
-  <label>New bundle ID <small>(optional; use it to install next to the App Store version)</small>
-    <input name="bundle_id" value="{{ o.bundle_id or '' }}" placeholder="com.example.app.sideload" autocapitalize="off" autocorrect="off"></label>
-  <label>New display name <small>(optional)</small>
+  <summary>{{ icon('sliders', 18) }}<span>Options</span>{{ icon('chevron', 16, 'chev') }}</summary>
+  <label class="field">New bundle ID
+    <input name="bundle_id" value="{{ o.bundle_id or '' }}" placeholder="com.example.app.sideload" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <small>Optional. Change it to install next to the App Store version.</small></label>
+  <label class="field">New display name
     <input name="name" value="{{ o.name or '' }}" placeholder="My App"></label>
-  <label>Minimum iOS <small>(optional)</small>
+  <label class="field">Minimum iOS
     <input name="min_os" value="{{ o.min_os or '' }}" placeholder="15.0" inputmode="decimal"></label>
-  <label class="chk"><input type="checkbox" name="rm_extensions" {% if o.rm_extensions %}checked{% endif %}> Remove app extensions (widgets, share sheets)</label>
-  <label class="chk"><input type="checkbox" name="rm_watch" {% if o.rm_watch %}checked{% endif %}> Remove Apple Watch app</label>
-  <label class="chk"><input type="checkbox" name="rm_uisd" {% if o.rm_uisd %}checked{% endif %}> Remove device restrictions (UISupportedDevices)</label>
-  <label class="chk"><input type="checkbox" name="enable_docs" {% if o.enable_docs %}checked{% endif %}> Show app's files in the Files app</label>
+  <div class="switches">
+    <label class="sw"><span>Remove app extensions<small>Widgets, share sheets</small></span><input type="checkbox" name="rm_extensions" {% if o.rm_extensions %}checked{% endif %}></label>
+    <label class="sw"><span>Remove Apple Watch app</span><input type="checkbox" name="rm_watch" {% if o.rm_watch %}checked{% endif %}></label>
+    <label class="sw"><span>Remove device restrictions<small>UISupportedDevices</small></span><input type="checkbox" name="rm_uisd" {% if o.rm_uisd %}checked{% endif %}></label>
+    <label class="sw"><span>Show the app's files in the Files app</span><input type="checkbox" name="enable_docs" {% if o.enable_docs %}checked{% endif %}></label>
+    {% if not (m is defined and m) %}
+    <label class="sw"><span>Also inject tweaks into extensions</span><input type="checkbox" name="inject_ext"></label>
+    {% endif %}
+  </div>
   {% if not (m is defined and m) %}
-  <label>Inject tweaks <small>(.dylib, optional)</small>
-    <input type="file" name="dylib" multiple></label>
-  <label class="chk"><input type="checkbox" name="inject_ext"> Also inject tweaks into extensions</label>
+  <label class="field">Inject tweaks
+    <input type="file" name="dylib" multiple accept=".dylib">
+    <small>Optional .dylib files.</small></label>
   {% endif %}
 </details>

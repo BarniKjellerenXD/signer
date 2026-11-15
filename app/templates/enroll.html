@@ -1,22 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Register device · {{ site }}{% endblock %}
 {% block content %}
-<section class="card">
-  <h2>Register this iPhone</h2>
-  <p>This reads your iPhone's device ID (UDID) through a temporary Apple profile and adds it to the signing profile. Nothing stays installed.</p>
+<a class="back" href="/devices">{{ icon('back') }}Devices</a>
+<div class="title-row"><h1>Register this iPhone</h1></div>
+<p class="lede">This reads your iPhone's device ID (UDID) through a temporary Apple profile and adds it to the signing profile. Nothing stays installed.</p>
+
+<section class="group">
   <form method="get" action="/enroll/profile">
-    <label>Name for this device
+    <label class="field">Name for this device
       <input name="name" placeholder="e.g. Barni iPhone 13" maxlength="50" required></label>
-    <button class="primary wide">Get the registration profile</button>
+    <button class="primary wide lg">Get the registration profile</button>
   </form>
 </section>
-<section class="card help">
-  <h3>What happens next</h3>
-  <ol>
+
+<h2>What happens next</h2>
+<section class="group">
+  <ol class="steps">
     <li>Safari asks to download a configuration profile: tap <b>Allow</b>.</li>
     <li>Open <b>Settings</b>, tap <b>Profile Downloaded</b> at the top, then <b>Install</b> and enter your passcode. It's shown as "Unverified", which is normal.</li>
     <li>Safari reopens with your UDID. The server registers it with Apple and re-signs the apps, which takes about a minute.</li>
   </ol>
-  <p class="muted">Must be done in Safari with Tailscale on. If nothing happens after Install, open this page again and retry.</p>
+  <p class="note">Must be done in Safari with Tailscale on. If nothing happens after Install, open this page again and retry.</p>
 </section>
 {% endblock %}

@@ -3,36 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-title" content="{{ site }}">
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg?v=1">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/static/style.css?v=3">
-{% if busy or (task and task.status in ('queued','running')) %}<meta http-equiv="refresh" content="3">{% endif %}
+<link rel="stylesheet" href="/static/style.css?v=4">
+{% set live = busy or (task and task.status in ('queued','running')) %}
+{% if live %}<noscript><meta http-equiv="refresh" content="3"></noscript>{% endif %}
 <title>{% block title %}{{ site }}{% endblock %}</title>
 </head>
-<body>
-<header>
-  <a class="brand" href="/">{{ site }}</a>
-  <nav>
-    <a href="/">Apps</a>
-    <a href="/devices">Devices</a>
-    {% if owner %}<a href="/setup">Setup</a>{% endif %}
-  </nav>
-</header>
-<main>
-  {% if msg %}<div class="flash ok">{{ msg }}</div>{% endif %}
-  {% if err %}<div class="flash err">{{ err }}</div>{% endif %}
+{% set path = request.url.path %}
+<body{% if live %} data-busy{% endif %}>
+<header class="bar"><div class="bar-in">
+  <a class="brand" href="/">{{ logo(26) }}<span>{{ site }}</span></a>
+</div></header>
+<nav class="tabs" aria-label="Sections">
+  <a href="/"{% if path == '/' or path.startswith('/app/') %} class="on" aria-current="page"{% endif %}>{{ icon('apps', 24) }}<span>Apps</span></a>
+  <a href="/devices"{% if path.startswith(('/devices', '/enroll')) %} class="on" aria-current="page"{% endif %}>{{ icon('phone', 24) }}<span>Devices</span></a>
+  {% if owner %}<a href="/setup"{% if path.startswith('/setup') %} class="on" aria-current="page"{% endif %}>{{ icon('sliders', 24) }}<span>Setup</span></a>{% endif %}
+</nav>
+<main class="{% block mainclass %}{% endblock %}">
+  {% if msg %}<div class="flash ok" role="status">{{ icon('ok') }}<div>{{ msg }}</div></div>{% endif %}
+  {% if err %}<div class="flash err" role="alert">{{ icon('err') }}<div>{{ err }}</div></div>{% endif %}
+  <div id="live-top" data-live>
   {% if task and task.status in ('queued','running') %}
-    <div class="flash info"><span class="spin"></span>{{ task.name }}…</div>
+    <div class="flash info" role="status"><span class="spin"></span><div>{{ task.name }}…</div></div>
   {% elif task and task.status == 'error' and task.t and (task.t|ago).endswith(('just now','min ago')) %}
-    <div class="flash err">{{ task.name }} failed: {{ task.msg }}</div>
+    <div class="flash err" role="alert">{{ icon('err') }}<div>{{ task.name }} failed: {{ task.msg }}</div></div>
   {% endif %}
   {% if not ident.ready %}
-    <div class="flash warn">Signing isn't ready: {{ ident.problems|join(', ') }}.
-      {% if owner %}<a href="/setup">Open Setup →</a>{% else %}Ask the owner to finish Setup.{% endif %}</div>
+    <div class="flash warn">{{ icon('warn') }}<div>Signing isn't ready: {{ ident.problems|join(', ') }}.
+      {% if owner %}<a href="/setup">Open Setup</a>{% else %}Ask the owner to finish Setup.{% endif %}</div></div>
   {% endif %}
+  </div>
   {% block content %}{% endblock %}
+  <footer>{% if login %}Signed in as {{ login }}{% else %}No login identity (open this site through Tailscale){% endif %}</footer>
 </main>
-<footer>{% if login %}Signed in as {{ login }}{% else %}No login identity (open this site through Tailscale){% endif %}</footer>
+<script src="/static/app.js?v=1" defer></script>
 </body>
 </html>

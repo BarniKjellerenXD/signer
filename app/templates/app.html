@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ (m.final or {}).name or m.name }} · {{ site }}{% endblock %}
+{% block content %}
+{% set i = m.final or m.orig or {} %}
+<section class="card">
+  <div class="app-head">
+    <img src="/i/{{ m.id }}.png?r={{ m.rev or 0 }}" alt="" width="76" height="76">
+    <div>
+      <h2>{{ i.name or m.name or 'App' }}</h2>
+      <div class="muted mono">{{ i.bundle_id or m.source }}</div>
+      <div class="muted">{% if i.version %}v{{ i.version }}{% if i.build and i.build != i.version %} ({{ i.build }}){% endif %} · {% endif %}{{ (m.size or m.size_orig)|size }}</div>
+    </div>
+  </div>
+
+  {% if m.status == 'signed' %}
+    <a class="btn primary wide install-big" href="{{ m|itms }}">Install on this iPhone</a>
+    <p class="muted center">Signed {{ m.signed_at|ago }}{% if m.seconds %} in {{ m.seconds }} s{% endif %} · profile expires {{ m.profile_expires|date }}</p>
+    {% if ident.profile and m.profile_uuid != ident.profile.uuid %}
+      <div class="flash warn">Signed with an older profile; newly added iPhones can't install this copy. Re-sign below.</div>
+    {% endif %}
+  {% else %}
+    <div class="status {{ m.status }}">{% if m.status in ('queued','signing','downloading','uploading') %}<span class="spin"></span>{% endif %}<b>{{ m.status|capitalize }}</b>{% if m.error %}: {{ m.error }}{% endif %}</div>
+  {% endif %}
+
+  {% if (m.orig or {}).encrypted %}
+    <div class="flash err">This IPA is still App Store-encrypted (FairPlay). It will install but crash on launch. Use a decrypted IPA.</div>
+  {% endif %}
+  {% if m.orig and m.orig.bundle_id and i.bundle_id and m.orig.bundle_id != i.bundle_id %}
+    <p class="muted">Original bundle ID: <span class="mono">{{ m.orig.bundle_id }}</span></p>
+  {% endif %}
+  {% if m.orig %}
+  <p class="muted">{% if m.orig.min_os %}Needs iOS {{ m.orig.min_os }}+ · {% endif %}{{ m.orig.extensions }} extension(s){% if m.orig.watch %} · Watch app{% endif %} · uploaded {{ m.uploaded|ago }}{% if m.by %} by {{ m.by }}{% endif %}</p>
+  {% endif %}
+</section>
+
+{% if not m.fatal %}
+<section class="card">
+  <h3>Re-sign</h3>
+  <form method="post" action="/app/{{ m.id }}/resign">
+    {% include "_options.html" %}
+    <button class="wide">Re-sign with these options</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="actions">
+    {% if m.status == 'signed' %}<a class="btn ghost" href="/d/{{ m.id }}/{{ m.rev }}.ipa">Download signed IPA</a>{% endif %}
+    <form method="post" action="/app/{{ m.id }}/delete" onsubmit="return confirm('Delete this app from the server?')"><button class="danger">Delete</button></form>
+  </div>
+  {% if m.zsign_log %}
+  <details><summary>zsign log</summary><pre>{{ m.zsign_log }}</pre></details>
+  {% endif %}
+</section>
+{% endblock %}

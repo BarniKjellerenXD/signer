@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-title" content="{{ site }}">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/static/style.css?v=3">
+{% if busy or (task and task.status in ('queued','running')) %}<meta http-equiv="refresh" content="3">{% endif %}
+<title>{% block title %}{{ site }}{% endblock %}</title>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">{{ site }}</a>
+  <nav>
+    <a href="/">Apps</a>
+    <a href="/devices">Devices</a>
+    {% if owner %}<a href="/setup">Setup</a>{% endif %}
+  </nav>
+</header>
+<main>
+  {% if msg %}<div class="flash ok">{{ msg }}</div>{% endif %}
+  {% if err %}<div class="flash err">{{ err }}</div>{% endif %}
+  {% if task and task.status in ('queued','running') %}
+    <div class="flash info"><span class="spin"></span>{{ task.name }}…</div>
+  {% elif task and task.status == 'error' and task.t and (task.t|ago).endswith(('just now','min ago')) %}
+    <div class="flash err">{{ task.name }} failed: {{ task.msg }}</div>
+  {% endif %}
+  {% if not ident.ready %}
+    <div class="flash warn">Signing isn't ready: {{ ident.problems|join(', ') }}.
+      {% if owner %}<a href="/setup">Open Setup →</a>{% else %}Ask the owner to finish Setup.{% endif %}</div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer>{% if login %}Signed in as {{ login }}{% else %}No login identity (open this site through Tailscale){% endif %}</footer>
+</body>
+</html>

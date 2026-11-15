@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Registered · {{ site }}{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>✓ Device received</h2>
+  <p><b>{{ tok.name }}</b> {% if tok.product %}({{ tok.product }}{% if tok.version %}, iOS {{ tok.version }}{% endif %}){% endif %}</p>
+  <p class="mono big">{{ tok.udid }}</p>
+  {% if ident.asc %}
+    {% if tok.udid|lower in (ident.profile.devices if ident.profile else []) %}
+      <div class="flash ok">This iPhone is in the signing profile. <a href="/">Go install apps →</a></div>
+    {% elif task and task.status in ('queued','running') %}
+      <p class="muted">Registering with Apple and rebuilding the profile. This page refreshes by itself.</p>
+    {% elif task and task.status == 'error' %}
+      <div class="flash err">Apple step failed: {{ task.msg }}</div>
+    {% else %}
+      <p class="muted">Waiting for the profile to include this device… <a href="">refresh</a></p>
+    {% endif %}
+  {% else %}
+    <div class="flash warn">No Apple API key is configured, so the owner has to add this UDID on developer.apple.com and upload a new profile.</div>
+  {% endif %}
+</section>
+{% endblock %}

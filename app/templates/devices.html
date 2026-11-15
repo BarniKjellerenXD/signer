@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Devices · {{ site }}{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Register this iPhone</h2>
+  <p>Every iPhone that installs apps must be in the signing profile. Open this page in Safari on the phone (Tailscale on) and tap the button.</p>
+  <a class="btn primary wide" href="/enroll">Register this iPhone</a>
+</section>
+
+<section>
+  <h2>Devices <small class="muted">{{ devices|selectattr('disabled','ne',true)|list|length }} active</small></h2>
+  {% if not devices %}<p class="muted">No devices yet.</p>{% endif %}
+  <ul class="devs">
+  {% for d in devices %}
+    <li class="{% if d.disabled %}off{% endif %}">
+      <div>
+        <b>{{ d.name or 'Device' }}</b>
+        <small>{{ d.model or d.product or '' }}{% if d.version %} · iOS {{ d.version }}{% endif %}{% if d.by %} · {{ d.by }}{% endif %}</small>
+        <small class="mono">{{ d.udid }}</small>
+        {% if d.error %}<small class="err-t">{{ d.error }}</small>{% endif %}
+      </div>
+      <div class="dev-side">
+        {% if d.disabled %}<span class="badge">removed</span>
+        {% elif d.udid|lower in in_profile %}<span class="badge signed">in profile</span>
+        {% elif d.registered %}<span class="badge queued">registered</span>
+        {% else %}<span class="badge waiting">pending</span>{% endif %}
+        {% if owner and not d.disabled %}
+          <form method="post" action="/devices/{{ d.udid }}/disable" onsubmit="return confirm('Remove this device from the profile? Apple only frees device slots at your yearly renewal.')"><button class="ghost small">Remove</button></form>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+
+{% if owner %}
+<section class="card">
+  <h3>Add a UDID by hand</h3>
+  <form method="post" action="/devices/add" class="inline">
+    <input name="name" placeholder="Name, e.g. Friend's iPhone" required>
+    <input name="udid" placeholder="00008110-000A1B2C3D4E5F60" required autocapitalize="off" autocorrect="off" class="mono">
+    <button>Add</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Setup · {{ site }}{% endblock %}
+{% block content %}
+{% set c = ident.cert %}{% set p = ident.profile %}
+<section class="card">
+  <h2>Signing identity</h2>
+  <table class="kv">
+    <tr><th>Certificate</th><td>
+      {% if c %}{{ c.cn }}<br><small class="muted">Team {{ c.team }} · expires {{ c.expires_ts|date }} ({{ c.expires_ts|days }} days) · Apple status: <b>{{ ocsp }}</b>{% if not c.matches_key %} · <span class="err-t">doesn't match server key</span>{% endif %}</small>
+      {% else %}<span class="muted">none yet</span>{% endif %}</td></tr>
+    <tr><th>Profile</th><td>
+      {% if p %}{{ p.name }}<br><small class="muted">{{ p.kind }} · App ID <span class="mono">{{ p.app_id }}</span> · {{ p.devices|length }} device(s) · expires {{ p.expires_ts|date }} ({{ p.expires_ts|days }} days)</small>
+      {% if p.kind == 'development' %}<br><small class="warn-t">Development profile: each iPhone needs Developer Mode on. Ad hoc avoids that.</small>{% endif %}
+      {% else %}<span class="muted">none yet</span>{% endif %}</td></tr>
+    <tr><th>Devices</th><td>{{ ident.devices }} registered here{% if ident.missing_devices %} · <span class="warn-t">{{ ident.missing_devices|length }} not in the profile yet</span>{% endif %}</td></tr>
+    <tr><th>Status</th><td>{% if ident.ready %}<span class="ok-t">Ready to sign</span>{% else %}<span class="err-t">{{ ident.problems|join(', ') }}</span>{% endif %}</td></tr>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Automatic setup <small class="muted">recommended</small></h2>
+  {% if ident.asc %}
+    <p>App Store Connect key <span class="mono">{{ ident.asc.key_id }}</span> is saved. New devices are registered and the profile is rebuilt automatically.</p>
+    <div class="actions">
+      <form method="post" action="/setup/run"><button class="primary">Rebuild certificate &amp; profile now</button></form>
+      <form method="post" action="/setup/asc/remove" onsubmit="return confirm('Delete the API key from the server?')"><button class="danger">Remove key</button></form>
+    </div>
+  {% else %}
+    <p>With an App Store Connect API key the server creates the certificate, the wildcard App ID and the ad hoc profile for you, and adds new iPhones automatically.</p>
+    <ol class="steps">
+      <li>Open <a href="https://appstoreconnect.apple.com/access/integrations/api" target="_blank" rel="noopener">App Store Connect → Users and Access → Integrations → App Store Connect API</a>. The first time, click <b>Request Access</b> and accept.</li>
+      <li><b>Team Keys → Generate API Key</b>: name it "{{ site }}", Access <b>Admin</b>.</li>
+      <li>Download the <span class="mono">AuthKey_XXXXXXXXXX.p8</span> file (Apple only lets you download it once), and copy the <b>Issuer ID</b> (top of the page) and the <b>Key ID</b>.</li>
+    </ol>
+    <form method="post" action="/setup/asc" enctype="multipart/form-data">
+      <label>Issuer ID <input name="issuer_id" required class="mono" autocapitalize="off" autocorrect="off" placeholder="57246542-96fe-1a63-e053-0824d011072a"></label>
+      <label>Key ID <input name="key_id" required class="mono" autocapitalize="characters" autocorrect="off" placeholder="2X9R4HXF34"></label>
+      <label>Key file (.p8) <input type="file" name="p8" required></label>
+      <button class="primary wide">Save key &amp; set everything up</button>
+    </form>
+  {% endif %}
+</section>
+
+<section class="card">
+  <details>
+    <summary><b>Manual setup</b> (without an API key)</summary>
+    <ol class="steps">
+      <li><a href="/setup/csr">Download this server's CSR</a>. The private key never leaves the server.</li>
+      <li>On <a href="https://developer.apple.com/account/resources/certificates/add" target="_blank" rel="noopener">developer.apple.com → Certificates → +</a> choose <b>Apple Distribution</b>, upload the CSR and download the .cer:
+        <form method="post" action="/setup/cert" enctype="multipart/form-data" class="inline"><input type="file" name="cer" required><button>Upload .cer</button></form></li>
+      <li>Identifiers → + → App IDs → App → <b>Wildcard</b>, Bundle ID <span class="mono">*</span>.</li>
+      <li>Devices → + : add each UDID (see the <a href="/devices">Devices</a> page).</li>
+      <li>Profiles → + → <b>Ad Hoc</b> → the wildcard App ID → the certificate from step 2 → all devices → download:
+        <form method="post" action="/setup/profile" enctype="multipart/form-data" class="inline"><input type="file" name="profile" required><button>Upload .mobileprovision</button></form></li>
+    </ol>
+    <h3>…or import an existing .p12</h3>
+    <form method="post" action="/setup/p12" enctype="multipart/form-data">
+      <label>.p12 <input type="file" name="p12" required></label>
+      <label>Password <input type="password" name="password" autocomplete="off"></label>
+      <label>Profile (.mobileprovision, optional) <input type="file" name="profile"></label>
+      <button>Import</button>
+    </form>
+    <p class="muted">Importing replaces the server's private key.</p>
+  </details>
+</section>
+
+<section class="card">
+  <h3>Export</h3>
+  <p class="muted">Use these with on-device signers (Feather/ESign) or anything else that needs the signing files.</p>
+  <form method="post" action="/setup/export-p12" class="inline">
+    <input type="password" name="password" placeholder="Password for the .p12" required minlength="4" autocomplete="new-password">
+    <button {% if not c %}disabled{% endif %}>Download .p12</button>
+  </form>
+  {% if p %}<p><a class="btn ghost" href="/setup/profile.mobileprovision">Download .mobileprovision</a></p>{% endif %}
+</section>
+
+<section class="card">
+  <details>
+    <summary><b>Activity log</b></summary>
+    <ul class="log">
+      {% for l in log %}<li class="{{ l.level }}"><small>{{ l.t|ago }}</small> {{ l.msg }}</li>{% endfor %}
+    </ul>
+  </details>
+</section>
+{% endblock %}

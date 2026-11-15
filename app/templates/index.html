@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Add an app</h2>
+  <form method="post" action="/upload" enctype="multipart/form-data" id="up">
+    <label class="drop">
+      <input type="file" name="ipa" id="ipa">
+      <span id="ipa-label">Choose an .ipa file</span>
+    </label>
+    <div class="or">or paste a direct link</div>
+    <input type="url" name="url" placeholder="https://example.com/app.ipa" inputmode="url" autocapitalize="off" autocorrect="off">
+    {% include "_options.html" %}
+    <button type="submit" class="primary wide">Upload &amp; sign</button>
+    <div id="prog" class="prog" hidden><div></div><span></span></div>
+  </form>
+</section>
+
+<section>
+  <div class="row-between">
+    <h2>Apps</h2>
+    {% if apps %}<form method="post" action="/resign-all"><button class="ghost small">Re-sign all</button></form>{% endif %}
+  </div>
+  {% if not apps %}<p class="muted">Nothing here yet. Upload an .ipa above.</p>{% endif %}
+  <ul class="apps">
+  {% for a in apps %}
+    <li>
+      <a class="app" href="/app/{{ a.id }}">
+        <img src="/i/{{ a.id }}.png?r={{ a.rev or 0 }}" alt="" width="52" height="52">
+        <div class="meta">
+          <b>{{ (a.final or {}).name or a.name or 'App' }}</b>
+          <small>{{ (a.final or a.orig or {}).bundle_id or a.source }}{% if (a.final or a.orig or {}).version %} · v{{ (a.final or a.orig).version }}{% endif %}</small>
+          {% if a.status == 'signed' and a.profile_uuid and ident.profile and a.profile_uuid != ident.profile.uuid %}<small class="warn-t">signed with an older profile</small>{% endif %}
+        </div>
+      </a>
+      {% if a.status == 'signed' %}
+        <a class="btn install" href="{{ a|itms }}">Install</a>
+      {% else %}
+        <span class="badge {{ a.status }}">{% if a.status in ('queued','signing','downloading','uploading') %}<span class="spin"></span>{% endif %}{{ a.status }}</span>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+
+<section class="card help">
+  <h3>How installing works</h3>
+  <ol>
+    <li>Keep <b>Tailscale on</b> and open this site in <b>Safari</b>.</li>
+    <li>Your iPhone must be registered once: <a href="/enroll">Devices → Register this iPhone</a>.</li>
+    <li>Tap <b>Install</b>, confirm, and the app appears on the home screen.</li>
+  </ol>
+</section>
+
+<script>
+(function () {
+  var f = document.getElementById('up'), inp = document.getElementById('ipa'), lab = document.getElementById('ipa-label');
+  inp.addEventListener('change', function () { lab.textContent = inp.files.length ? inp.files[0].name : 'Choose an .ipa file'; });
+  f.addEventListener('submit', function (e) {
+    if (!window.FormData || !inp.files.length) return;      // URL-only uploads: normal submit
+    e.preventDefault();
+    var p = document.getElementById('prog'), bar = p.querySelector('div'), txt = p.querySelector('span');
+    p.hidden = false; f.querySelector('button[type=submit]').disabled = true;
+    var x = new XMLHttpRequest();
+    x.open('POST', '/upload');
+    x.upload.onprogress = function (ev) {
+      if (!ev.lengthComputable) return;
+      var pc = Math.round(ev.loaded / ev.total * 100);
+      bar.style.width = pc + '%'; txt.textContent = pc < 100 ? 'Uploading ' + pc + '%' : 'Reading app…';
+    };
+    x.onload = function () { location.href = x.responseURL || '/'; };
+    x.onerror = function () { txt.textContent = 'Upload failed - check Tailscale and try again'; f.querySelector('button[type=submit]').disabled = false; };
+    x.send(new FormData(f));
+  });
+})();
+</script>
+{% endblock %}
